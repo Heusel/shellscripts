@@ -6,15 +6,21 @@ if [ "$1" = "device_mounted" ];then
     echo "Log start at: $(date +'%F-%H-%M-%S')"
     set -o xtrace
     pkill mpv
-    # only play the newest file
+
+    #find all video files in mount_path
+    filelist=$(sudo find "$mount_path"/* -type f -exec file -N -i -- {} + | sed -n 's!: video/[^:]*$!!p')
+
+    #find latest in filelist
     unset -v latest
-    for file in "$mount_path"/*; do
-        [[ $file -nt $latest ]] && latest=$file
+    for file in $filelist; do
+      [[ $file -nt $latest ]] && latest=$file
     done
+
+    #run latest if filetype is video
     # zenity --info --timeout=10 --text "newest file in $2: $latest"
     if [[ $(file --mime-type $latest | cut -d ":" -f2 | sed "s/\s//g") == "video"* ]]; then
         mpv --fs $latest > /dev/null 2>&1
     else
-	zenity --error --text "the newest file is not a video!" --timeout 10
+        zenity --error --text "the newest file is not a video!" --timeout 10
     fi
 fi
